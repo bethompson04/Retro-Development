@@ -225,6 +225,26 @@ remaining_loop:
 
 .endproc
 
+; Audio stuffs
+.proc init_audio
+  LDA #$00F
+  STA $4015 ; most common useage of audio in games. (Square1 , Square 2, Triangle, Noise)
+
+  RTS
+.endproc
+
+.proc engine_audio
+LDA #%01010010
+STA $4000 ; enable square 1
+
+LDA #$FF
+STA $4002
+LDA #$00
+STA $4003
+
+RTS
+.endproc
+
 .proc init_sprites
 
   ;LDX #0
@@ -338,6 +358,7 @@ remaining_loop:
       SEC
       SBC #$01
       STA player_x
+      JSR engine_audio
 not_left:
     LDA controller_1
     AND #PAD_R
@@ -346,6 +367,7 @@ not_left:
       CLC
       ADC #$01
       STA player_x
+      JSR engine_audio
   not_right:
     LDA controller_1
     AND #PAD_U
@@ -354,6 +376,7 @@ not_left:
       SEC
       SBC #$01
       STA player_y
+      JSR engine_audio
   not_up:
     LDA controller_1
     AND #PAD_D
@@ -362,6 +385,7 @@ not_left:
       CLC
       ADC #$01
       STA player_y
+      JSR engine_audio
   not_down:
     RTS                       ; Return to caller
 .endproc
@@ -591,6 +615,7 @@ hello_txt:
   JSR set_palette         ; Set palette colors
   JSR set_nametable       ; Set nametable tiles
   JSR init_sprites        ; Initialize sprites
+  JSR init_audio
 
   JMP main                ; Jump to main program
 .endproc
