@@ -109,9 +109,9 @@ oam: .res 256	; sprite OAM data
     CMP #60 ; check if time is 60
     BNE skip ; if not 60, go to skip
       INC seconds ; increment seconds by one
-      JMP engine_animation
       LDA #0      ; reset time to zero
       STA time    ; store new time
+
     skip:
 
     ; restore registers
@@ -121,6 +121,9 @@ oam: .res 256	; sprite OAM data
     PLA
     TAX
     PLA
+
+    JSR engine_animation
+    JSR update_sprites
 
   RTI                     ; Return from interrupt (not using NMI yet)
 .endproc
@@ -262,25 +265,28 @@ RTS
 
 .proc engine_animation
 
-    LDA seconds
-    AND #$01 ; check if time is X
+    LDA time
+    AND #$10 ; check if time is X
     BEQ no_switch ; if even, go to no_switch
 
-      LDA SPRITE_2_ADDR
+      LDA SPRITE_2_ADDR + SPRITE_OFFSET_TILE
       CMP #$03
-      BNE engine_off ; if not equal to $03, then go to engine_on
-        LDA #$13
-        STA SPRITE_2_ADDR + SPRITE_OFFSET_TILE
-        LDA #$14
-        STA SPRITE_3_ADDR + SPRITE_OFFSET_TILE
+      BEQ engine_on ; if not equal to $03, then go to engine_on
 
       engine_off:
         LDA #$03
         STA SPRITE_2_ADDR + SPRITE_OFFSET_TILE
         LDA #$04
         STA SPRITE_3_ADDR + SPRITE_OFFSET_TILE
+        JMP no_switch
+
+      engine_on:
+        LDA #$13
+        STA SPRITE_2_ADDR + SPRITE_OFFSET_TILE
+        LDA #$14
+        STA SPRITE_3_ADDR + SPRITE_OFFSET_TILE
     no_switch:
-  RTI                    ; Return from interrupt (not using NMI yet)
+    RTS                    ; Return from interrupt (not using NMI yet)
 .endproc
 
 .proc init_sprites
@@ -473,6 +479,8 @@ not_left:
 ;******************************************************************************
 .proc main
     ; seed the random number
+
+
     LDA #$45
     STA random_num
     ;--------------------------------------------------------------------------
