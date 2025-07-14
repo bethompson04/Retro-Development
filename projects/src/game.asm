@@ -109,6 +109,7 @@ oam: .res 256	; sprite OAM data
     CMP #60 ; check if time is 60
     BNE skip ; if not 60, go to skip
       INC seconds ; increment seconds by one
+      JMP engine_animation
       LDA #0      ; reset time to zero
       STA time    ; store new time
     skip:
@@ -234,15 +235,52 @@ remaining_loop:
 .endproc
 
 .proc engine_audio
-LDA #%01010010
+; ++|+||||
+; Duty / Tone ++||||||
+; Volume Duration ||+|||||
+; Saw envelope Disable (internal counter for volume or volume for volume)
+; Volume (4 bits) ||||++++
+LDA #%00010001
 STA $4000 ; enable square 1
 
+; Notes and Periods (11-bit periods)
+; Higher
 LDA #$FF
 STA $4002
-LDA #$00
+; Lower
+LDA #$02
 STA $4003
 
+; How to know which 11 bit period corresponds to which note
+; -- P = C/(F*16) - 1
+; P = Period
+; C = CPU Speed (Hz)
+; Frequency of the note (Hz)
+
 RTS
+.endproc
+
+.proc engine_animation
+
+    LDA seconds
+    AND #$01 ; check if time is X
+    BEQ no_switch ; if even, go to no_switch
+
+      LDA SPRITE_2_ADDR
+      CMP #$03
+      BNE engine_off ; if not equal to $03, then go to engine_on
+        LDA #$13
+        STA SPRITE_2_ADDR + SPRITE_OFFSET_TILE
+        LDA #$14
+        STA SPRITE_3_ADDR + SPRITE_OFFSET_TILE
+
+      engine_off:
+        LDA #$03
+        STA SPRITE_2_ADDR + SPRITE_OFFSET_TILE
+        LDA #$04
+        STA SPRITE_3_ADDR + SPRITE_OFFSET_TILE
+    no_switch:
+  RTI                    ; Return from interrupt (not using NMI yet)
 .endproc
 
 .proc init_sprites
